@@ -2,6 +2,24 @@
 
 This tutorial guides you through creating a complete REST API with NestJS, PostgreSQL and TypeORM.
 
+## 📋 Table of Contents
+- [Tutorial Objectives](#-tutorial-objectives)
+- [NestJS Core Concepts](#-nestjs-core-concepts)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Project Structure](#-project-structure)
+- [Tutorial Steps](#-tutorial-steps)
+- [Authentication](#-authentication)
+- [Useful Commands](#-useful-commands)
+- [API Documentation](#-api-documentation)
+- [Tests](#-tests)
+- [Detailed Documentation](#-detailed-documentation)
+- [Environment Variables](#-environment-variables)
+- [Contribution](#-contribution)
+- [License](#-license)
+- [Acknowledgments](#-acknowledgments)
+- [Support](#-support)
+
 ## 🎯 Tutorial Objectives
 
 - Understand NestJS architecture
@@ -9,6 +27,181 @@ This tutorial guides you through creating a complete REST API with NestJS, Postg
 - Use TypeORM with PostgreSQL
 - Handle authentication and authorization
 - Set up automated testing
+
+## 🎯 NestJS Core Concepts
+
+### Modules
+Modules are used to organize the application structure. Each module encapsulates a closely related set of capabilities. Modules are decorated with `@Module()`.
+
+### Controllers
+Controllers handle incoming requests and return responses. They are decorated with `@Controller()` and handle specific routes.
+
+### Services
+Services contain the business logic. They are injectable classes (decorated with `@Injectable()`) that can be shared across multiple parts of your application.
+
+### Repositories
+Repositories are classes that handle database operations for specific entities. In NestJS with TypeORM:
+
+- They extend `Repository<Entity>` from TypeORM
+- Automatically inherit CRUD operations (find, findOne, save, remove, etc.)
+- Allow custom database queries and operations
+- Are injectable in services using `@InjectRepository()`
+
+Example:
+```typescript
+@EntityRepository(Task)
+export class TaskRepository extends Repository<Task> {
+  // Inherits: find(), findOne(), save(), remove(), etc.
+  
+  // Custom methods
+  async getTasks(filterDto: GetTasksFilterDto): Promise<Task[]> {
+    const query = this.createQueryBuilder('task');
+    // ... custom query logic
+    return await query.getMany();
+  }
+}
+```
+
+### Dependency Injection
+NestJS uses dependency injection to manage dependencies between components. This is a design pattern where dependencies are "injected" into a class rather than created inside it.
+
+#### Basic Dependency Injection
+```typescript
+// user.service.ts
+@Injectable()
+export class UserService {
+  private users = [];
+  
+  async findOne(id: number) {
+    return this.users.find(user => user.id === id);
+  }
+}
+
+// user.controller.ts
+@Controller('users')
+export class UserController {
+  constructor(
+    private userService: UserService // NestJS automatically injects the service
+  ) {}
+
+  @Get(':id')
+  getUser(@Param('id') id: number) {
+    return this.userService.findOne(id);
+  }
+}
+```
+
+#### Repository Injection
+```typescript
+// user.repository.ts
+@EntityRepository(User)
+export class UserRepository extends Repository<User> {
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
+    const { email, password } = createUserDto;
+    const user = this.create({ email, password });
+    return await this.save(user);
+  }
+}
+
+// user.service.ts
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(UserRepository)
+    private userRepository: UserRepository,
+  ) {}
+
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
+    return this.userRepository.createUser(createUserDto);
+  }
+}
+```
+
+#### Multiple Dependencies
+```typescript
+// task.service.ts
+@Injectable()
+export class TaskService {
+  constructor(
+    @InjectRepository(TaskRepository)
+    private taskRepository: TaskRepository,
+    private userService: UserService,
+    private configService: ConfigService,
+  ) {}
+
+  async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
+    const maxTasks = this.configService.get('MAX_TASKS_PER_USER');
+    const userTasks = await this.taskRepository.count({ where: { userId: user.id } });
+
+    if (userTasks >= maxTasks) {
+      throw new BadRequestException('Maximum tasks limit reached');
+    }
+
+    const task = this.taskRepository.create({
+      ...createTaskDto,
+      user,
+    });
+
+    return await this.taskRepository.save(task);
+  }
+}
+```
+
+#### Custom Providers
+```typescript
+// logger.service.ts
+@Injectable()
+export class LoggerService {
+  log(message: string) {
+    console.log(`[${new Date().toISOString()}] ${message}`);
+  }
+}
+
+// app.module.ts
+@Module({
+  providers: [
+    // Custom provider with useClass
+    {
+      provide: 'LOGGER',
+      useClass: LoggerService,
+    },
+    // Custom provider with useValue
+    {
+      provide: 'API_KEY',
+      useValue: process.env.API_KEY,
+    },
+    // Custom provider with useFactory
+    {
+      provide: 'DATABASE_CONFIG',
+      useFactory: (configService: ConfigService) => ({
+        host: configService.get('DB_HOST'),
+        port: configService.get('DB_PORT'),
+      }),
+      inject: [ConfigService],
+    },
+  ],
+})
+export class AppModule {}
+
+// Using custom providers
+@Injectable()
+export class SomeService {
+  constructor(
+    @Inject('LOGGER') private logger: LoggerService,
+    @Inject('API_KEY') private apiKey: string,
+    @Inject('DATABASE_CONFIG') private dbConfig: DatabaseConfig,
+  ) {}
+}
+```
+
+These examples demonstrate:
+- Basic constructor injection
+- Repository injection with TypeORM
+- Multiple dependency injection
+- Custom providers with different injection strategies
+- Using environment variables and configuration
+- Proper error handling
+- Type safety with TypeScript
 
 ## 📚 Prerequisites
 
