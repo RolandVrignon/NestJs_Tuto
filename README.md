@@ -1,99 +1,156 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# NestJS Tutorial - Task Management API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Ce tutoriel vous guide à travers la création d'une API REST complète avec NestJS, PostgreSQL et TypeORM.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🎯 Objectifs du Tutoriel
 
-## Description
+- Comprendre l'architecture NestJS
+- Implémenter une API REST complète
+- Utiliser TypeORM avec PostgreSQL
+- Gérer l'authentification et l'autorisation
+- Mettre en place des tests automatisés
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 📚 Prérequis
 
-## Project setup
+- Node.js (v14+)
+- pnpm (v8+)
+- Docker (pour PostgreSQL)
+- Connaissances de base en TypeScript
+- Familiarité avec les API REST
+
+## 🚀 Installation
 
 ```bash
-$ pnpm install
+# Installer pnpm si non installé
+npm install -g pnpm
+
+# Cloner le repository
+git clone https://github.com/RolandVrignon/NestJs_Tuto.git
+
+# Installer les dépendances
+pnpm install
+pnpm add @nestjs/swagger swagger-ui-express
+pnpm add -D @types/node @types/express @types/jest @types/bcrypt @types/passport-jwt
+
+# Lancer la base de données
+docker-compose up -d
+
+# Lancer l'application en développement
+pnpm run start:dev
 ```
 
-## Compile and run the project
+## 📖 Structure du Projet
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+src/
+├── users/              # Module de gestion des utilisateurs
+├── tasks/              # Module de gestion des tâches (à venir)
+├── auth/               # Module d'authentification (à venir)
+├── config/            # Configuration de l'application
+└── app.module.ts      # Module racine
 ```
 
-## Run tests
+## 🛠️ Étapes du Tutoriel
+
+1. **Configuration Initiale**
+   - Installation de NestJS
+   - Configuration de PostgreSQL avec Docker
+   - Configuration de TypeORM
+
+2. **Module Users** _(Actuel)_
+   - CRUD complet
+   - Validation des données
+   - Hachage des mots de passe
+   - Tests unitaires
+
+3. **Authentification** _(À venir)_
+   - JWT
+   - Guards
+   - Stratégies de Passport
+
+4. **Module Tasks** _(À venir)_
+   - Relations avec les utilisateurs
+   - Filtres et pagination
+   - Tests d'intégration
+
+## 📝 Commandes Utiles
 
 ```bash
-# unit tests
-$ pnpm run test
+# Développement
+pnpm run start:dev
 
-# e2e tests
-$ pnpm run test:e2e
+# Tests
+pnpm run test
+pnpm run test:e2e
+pnpm run test:cov
 
-# test coverage
-$ pnpm run test:cov
+# Build
+pnpm run build
+
+# Production
+pnpm run start:prod
 ```
 
-## Deployment
+## 🔍 Documentation API
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Une fois l'application lancée, la documentation Swagger est disponible à :
+```
+http://localhost:3000/api
+```
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 🧪 Tests
 
 ```bash
-$ pnpm install -g mau
-$ mau deploy
+# Tests unitaires
+pnpm run test
+
+# Tests e2e
+pnpm run test:e2e
+
+# Couverture de code
+pnpm run test:cov
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 📚 Documentation Détaillée
 
-## Resources
+- [Module Users](src/users/README.md)
+- Module Tasks (à venir)
+- Module Auth (à venir)
 
-Check out a few resources that may come in handy when working with NestJS:
+## 🔐 Variables d'Environnement
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Créez un fichier `.env` à la racine :
 
-## Support
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_DATABASE=task_management
+JWT_SECRET=votre_secret_jwt
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🤝 Contribution
 
-## Stay in touch
+1. Fork le projet
+2. Créez votre branche (`git checkout -b feature/AmazingFeature`)
+3. Commit vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push sur la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une Pull Request
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 📝 License
 
-## License
+MIT License - voir le fichier [LICENSE.md](LICENSE.md) pour plus de détails.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 🙏 Remerciements
+
+- [NestJS Documentation](https://docs.nestjs.com/)
+- [TypeORM Documentation](https://typeorm.io/)
+- [Jest Documentation](https://jestjs.io/)
+
+## 🤔 Support
+
+Pour toute question ou problème :
+- Ouvrez une issue
+- Consultez la [documentation NestJS](https://docs.nestjs.com/)
+- Rejoignez le [Discord NestJS](https://discord.gg/nestjs)
