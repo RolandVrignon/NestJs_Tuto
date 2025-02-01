@@ -4,7 +4,7 @@ This tutorial guides you through creating a complete REST API with NestJS, Postg
 
 ![Complete Flow](/assets/complet-flow.png)
 
-## �� Table of Contents
+## 📝 Table of Contents
 - [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -51,6 +51,11 @@ This tutorial guides you through creating a complete REST API with NestJS, Postg
   - [Entities](#entities)
     - [Entity Relationships](#entity-relationships)
     - [Key Features](#entity-key-features)
+  - [Interceptors](#-interceptors)
+    - [Core Concepts](#interceptor-core-concepts)
+    - [Common Use Cases](#interceptor-common-use-cases)
+    - [Best Practices](#interceptor-best-practices)
+    - [Benefits](#interceptor-benefits)
 - [Features](#-features)
   - [Authentication](#authentication)
   - [Task Management](#task-management)
@@ -1049,6 +1054,153 @@ export class Task {
   description: string;
 }
 ```
+
+### Interceptors
+Interceptors are powerful tools in NestJS that can intercept the request-response cycle. They can:
+- Transform the result returned from a route handler
+- Transform exceptions thrown from the route handler
+- Extend basic route handler behavior
+- Completely override route handler behavior
+
+#### Core Concepts
+1. **Basic Interceptor**
+```typescript
+@Injectable()
+export class LoggingInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const request = context.switchToHttp().getRequest();
+    const method = request.method;
+    const url = request.url;
+    
+    console.log(`[${method}] ${url} - ${new Date().toISOString()}`);
+    
+    return next.handle();
+  }
+}
+```
+
+2. **Response Transformation**
+```typescript
+@Injectable()
+export class TransformInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    return next.handle().pipe(
+      map(data => ({
+        statusCode: context.switchToHttp().getResponse().statusCode,
+        timestamp: new Date().toISOString(),
+        data
+      }))
+    );
+  }
+}
+```
+
+#### Common Use Cases
+
+1. **Logging**
+```typescript
+@Controller('users')
+@UseInterceptors(LoggingInterceptor)
+export class UsersController {
+  // All routes will be logged
+}
+```
+
+2. **Response Caching**
+```typescript
+@Injectable()
+export class CacheInterceptor implements NestInterceptor {
+  constructor(private cacheService: CacheService) {}
+
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
+    const cacheKey = this.createKey(context);
+    const cachedResponse = await this.cacheService.get(cacheKey);
+
+    if (cachedResponse) {
+      return of(cachedResponse);
+    }
+
+    return next.handle().pipe(
+      tap(response => this.cacheService.set(cacheKey, response))
+    );
+  }
+}
+```
+
+3. **Request Timing**
+```typescript
+@Injectable()
+export class TimingInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const start = Date.now();
+    
+    return next.handle().pipe(
+      tap(() => {
+        const duration = Date.now() - start;
+        console.log(`Request duration: ${duration}ms`);
+      })
+    );
+  }
+}
+```
+
+4. **Error Transformation**
+```typescript
+@Injectable()
+export class ErrorsInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    return next.handle().pipe(
+      catchError(err => {
+        return throwError(() => new HttpException({
+          status: HttpStatus.BAD_REQUEST,
+          timestamp: new Date().toISOString(),
+          message: err.message,
+        }, HttpStatus.BAD_REQUEST));
+      }),
+    );
+  }
+}
+```
+
+#### Best Practices
+
+1. **Global Registration**
+```typescript
+// main.ts
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalInterceptors(new TransformInterceptor());
+  await app.listen(3000);
+}
+```
+
+2. **Scoped Registration**
+```typescript
+@Module({
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+  ],
+})
+export class AppModule {}
+```
+
+3. **Combining Interceptors**
+```typescript
+@Controller('tasks')
+@UseInterceptors(LoggingInterceptor, TimingInterceptor, CacheInterceptor)
+export class TasksController {}
+```
+
+#### Benefits
+1. **Cross-Cutting Concerns**: Handle common tasks across routes
+2. **Code Reusability**: Write once, use everywhere
+3. **Response Consistency**: Standardize API responses
+4. **Performance Monitoring**: Track request timing and metrics
+5. **Caching**: Implement response caching
+6. **Logging**: Centralized request/response logging
 
 ## 🎯 Features
 
