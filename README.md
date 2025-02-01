@@ -2,7 +2,7 @@
 
 This tutorial guides you through creating a complete REST API with NestJS, PostgreSQL and TypeORM.
 
-![Complete Flow](/assets/complete-flow.png)
+![Complete Flow](/assets/complet-flow.png)
 
 ## �� Table of Contents
 - [Getting Started](#-getting-started)
