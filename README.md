@@ -13,20 +13,52 @@ This tutorial guides you through creating a complete REST API with NestJS, Postg
   - [Environment Variables](#-environment-variables)
 - [NestJS Core Concepts](#-nestjs-core-concepts)
   - [Modules](#modules)
+    - [Core Concepts](#core-concepts)
+    - [Types of Modules](#types-of-modules)
+    - [Module Organization](#module-organization)
+    - [Best Practices](#module-best-practices)
+    - [Common Patterns](#module-patterns)
   - [Controllers](#controllers)
+    - [Request Handlers](#request-handlers)
+    - [Request Validation](#request-validation)
+    - [Response Handling](#response-handling)
+    - [API Documentation](#api-documentation)
+    - [Best Practices](#controller-best-practices)
   - [Services](#services)
-  - [Repositories](#repositories)
-  - [DTOs](#dtos-data-transfer-objects)
+    - [Core Concepts](#service-core-concepts)
+    - [Service Patterns](#service-patterns)
+    - [Best Practices](#service-best-practices)
+    - [CRUD Operations](#crud-operations)
+    - [Business Logic](#business-logic)
   - [Guards](#guards)
+    - [Core Concepts](#guard-core-concepts)
+    - [Types of Guards](#types-of-guards)
+    - [Guard Implementation](#guard-implementation)
+    - [Best Practices](#guard-best-practices)
+    - [Custom Guards](#custom-guards)
+  - [Repositories](#repositories)
+    - [TypeORM vs Mongoose](#typeorm-vs-mongoose)
+    - [Common Operations](#common-operations)
+  - [DTOs](#dtos-data-transfer-objects)
+    - [Validation Decorators](#validation-decorators)
+    - [Swagger Documentation](#swagger-documentation)
+    - [Common DTO Patterns](#common-dto-patterns)
+    - [Best Practices](#dto-best-practices)
   - [Entities](#entities)
+    - [Entity Relationships](#entity-relationships)
+    - [Column Types](#column-types)
 - [Features](#-features)
   - [Authentication](#-authentication)
+    - [JWT Implementation](#jwt-implementation)
+    - [Guards & Security](#guards--security)
   - [Task Management](#-task-management)
   - [User Management](#-user-management)
 - [Development](#-development)
   - [Useful Commands](#-useful-commands)
   - [API Documentation](#-api-documentation)
   - [Tests](#-tests)
+    - [Unit Tests](#unit-tests)
+    - [E2E Tests](#e2e-tests)
 - [Additional Information](#-additional-information)
   - [Detailed Documentation](#-detailed-documentation)
   - [Contribution](#-contribution)
@@ -128,113 +160,382 @@ DB_DATABASE=task_management
 ## 🎯 NestJS Core Concepts
 
 ### Modules
-Modules are used to organize the application structure. Each module encapsulates a closely related set of capabilities. Modules are decorated with `@Module()`.
+Modules are the building blocks of NestJS applications. They help organize code into cohesive blocks and manage dependencies.
+
+#### Core Concepts
+1. **Module Decorator**
+```typescript
+@Module({
+  imports: [], // Import other modules
+  controllers: [], // Register controllers
+  providers: [], // Register services and other providers
+  exports: [], // Make providers available to other modules
+})
+```
+
+2. **Real Example: Tasks Module**
+```typescript
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { TasksController } from './controllers/tasks.controller';
+import { TasksService } from './services/tasks.service';
+import { TasksRepository } from './repositories/tasks.repository';
+import { Task } from './entities/task.entity';
+import { UsersModule } from '../users/users.module';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Task]), UsersModule],
+  controllers: [TasksController],
+  providers: [TasksService, TasksRepository],
+  exports: [TasksService],
+})
+export class TasksModule {}
+```
+
+#### Types of Modules
+
+1. **Feature Modules**
+- Organize code for specific features
+- Example: TasksModule, UsersModule
+- Encapsulate related functionality
+
+2. **Core Module**
+- Contains singleton services
+- Shared across entire application
+- Example: DatabaseModule, LoggerModule
+
+3. **Shared Modules**
+- Reusable modules
+- Exported providers
+- Example: UtilsModule
+
+#### Module Organization
+
+1. **Root Module (AppModule)**
+```typescript
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { databaseConfig } from './config/database.config';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { TasksModule } from './tasks/tasks.module';
+
+@Module({
+  imports: [
+    TypeOrmModule.forRoot(databaseConfig),
+    UsersModule,
+    AuthModule,
+    TasksModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+
+```
+
+2. **Feature Module Structure**
+```plaintext
+users/
+├── controllers/
+│   └── users.controller.ts
+├── services/
+│   └── users.service.ts
+├── dto/
+│   ├── create-user.dto.ts
+│   └── update-user.dto.ts
+├── entities/
+│   └── user.entity.ts
+└── users.module.ts
+```
+
+#### Module Best Practices
+
+1. **Dependency Management**
+```typescript
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([User]), // Database entities
+    JwtModule.register({              // External module configuration
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1d' },
+    }),
+  ],
+})
+```
+
+2. **Provider Registration**
+```typescript
+@Module({
+  providers: [
+    UsersService,
+    {
+      provide: 'CONFIG',
+      useValue: { apiUrl: 'http://api.example.com' }
+    },
+    {
+      provide: 'LOGGER',
+      useClass: CustomLogger
+    }
+  ],
+})
+```
+
+3. **Module Exports**
+```typescript
+@Module({
+  exports: [
+    UsersService,       // Export specific provider
+    AuthGuard,         // Export guard
+    TypeOrmModule,     // Re-export imported module
+  ],
+})
+```
+
+#### Common Module Patterns
+
+1. **Dynamic Modules**
+```typescript
+@Module({})
+export class ConfigModule {
+  static register(options: ConfigOptions): DynamicModule {
+    return {
+      module: ConfigModule,
+      providers: [
+        {
+          provide: 'CONFIG_OPTIONS',
+          useValue: options,
+        },
+        ConfigService,
+      ],
+      exports: [ConfigService],
+    };
+  }
+}
+```
+
+2. **Global Modules**
+```typescript
+@Global()
+@Module({
+  providers: [SharedService],
+  exports: [SharedService],
+})
+export class SharedModule {}
+```
+
+#### Module Features
+
+1. **Encapsulation**
+- Providers are scoped to their module
+- Must be explicitly exported to be used elsewhere
+- Creates clear boundaries
+
+2. **Dependency Injection**
+- Automatic dependency resolution
+- Circular dependency handling
+- Provider scope management
+
+3. **Module Re-exporting**
+```typescript
+@Module({
+  imports: [CommonModule],
+  exports: [CommonModule], // Re-export entire module
+})
+```
+
+#### Testing Modules
+
+```typescript
+describe('UsersModule', () => {
+  let module: TestingModule;
+
+  beforeEach(async () => {
+    module = await Test.createTestingModule({
+      imports: [UsersModule],
+    }).compile();
+  });
+
+  it('should be defined', () => {
+    expect(module).toBeDefined();
+  });
+});
+```
+
+#### Benefits
+1. **Organization**: Clear code structure
+2. **Reusability**: Modular components
+3. **Maintainability**: Separation of concerns
+4. **Testability**: Isolated testing
+5. **Scalability**: Easy to add new features
+6. **Dependency Management**: Clear dependencies
 
 ### Controllers
-Controllers handle incoming requests and return responses. They are decorated with `@Controller()` and handle specific routes.
+Controllers handle incoming HTTP requests and return responses. They are the entry point for all API requests in NestJS.
 
-### Services
-Services contain the business logic. They are injectable classes (decorated with `@Injectable()`) that can be shared across multiple parts of your application.
-
-### Repositories
-Repositories are classes that handle database operations for specific entities. In NestJS with TypeORM:
-- They extend `Repository<Entity>` from TypeORM
-- Automatically inherit CRUD operations (find, findOne, save, remove, etc.)
-- Allow custom database queries and operations
-- Are injectable in services using `@InjectRepository()`
-
-### DTOs (Data Transfer Objects)
-DTOs define the shape of data being transferred between client and server. They:
-- Validate incoming data using decorators
-- Document API parameters with Swagger
-- Provide type safety
-- Separate validation from business logic
-
-Example DTO:
+#### Core Concepts
+1. **Controller Decorators**
 ```typescript
-@ApiProperty({ example: 'user@example.com' })
-@IsEmail()
-@IsString()
-email: string;
+@Controller('users')        // Base route prefix
+@ApiTags('users')          // Swagger documentation
+@ApiBearerAuth()          // JWT authentication
 ```
 
-### Guards
-Guards determine whether a request should be handled by the route handler. They:
-- Handle authentication/authorization
-- Protect routes
-- Validate tokens
-- Inject user information into requests
+2. **Real Example: Tasks Controller**
+```typescript
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { TasksService } from '../services/tasks.service';
+import { CreateTaskDto } from '../dto/create-task.dto';
+import { AuthGuard } from '../../users/guards/auth.guard';
+import { RequestWithUser } from '../../auth/interfaces/request.interface';
 
-### Entities
-Entities are classes that map to database tables. They:
-- Use decorators to define table structure
-- Handle relationships between tables
-- Manage data validation
-- Enable automatic migrations
+@ApiTags('tasks')
+@ApiBearerAuth()
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
 
-## 🔥 Features
+  @Post()
+  @ApiOperation({ summary: 'Create a new task' })
+  @ApiResponse({ status: 201, description: 'Task successfully created.' })
+  @UseGuards(AuthGuard)
+  create(
+    @Request() req: RequestWithUser,
+    @Body() createTaskDto: CreateTaskDto,
+  ) {
+    return this.tasksService.create(req.user.id, createTaskDto);
+  }
 
-### Authentication
-- JWT-based authentication
-- Password hashing with bcrypt
-- Protected routes
-- User registration and login
+  @Get()
+  @ApiOperation({ summary: 'Get all tasks for current user' })
+  @UseGuards(AuthGuard)
+  findAll(@Request() req: RequestWithUser) {
+    return this.tasksService.findAll(req.user.id);
+  }
 
-### Task Management
-- Create, read, update, delete tasks
-- Filter and search tasks
-- Task ownership and access control
+  @Get(':id')
+  @ApiOperation({ summary: 'Get one task' })
+  @UseGuards(AuthGuard)
+  findOne(@Request() req: RequestWithUser, @Param('id') id: string) {
+    return this.tasksService.findOne(+id, req.user.id);
+  }
 
-### User Management
-- User registration
-- Profile management
-- Password encryption
-- Email validation
-
-## 🛠 Development
-
-### Useful Commands
-```bash
-# Development
-pnpm run start:dev
-
-# Testing
-pnpm run test
-pnpm run test:e2e
-
-# Production build
-pnpm run build
-pnpm run start:prod
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a task' })
+  @UseGuards(AuthGuard)
+  remove(@Request() req: RequestWithUser, @Param('id') id: string) {
+    return this.tasksService.remove(+id, req.user.id);
+  }
+}
 ```
 
-### API Documentation
-- Swagger UI available at `/api`
-- Detailed endpoint documentation
-- Request/response examples
-- Authentication documentation
+#### Request Handlers
 
-### Tests
-- Unit tests with Jest
-- E2E tests with Supertest
-- Test coverage reports
+1. **HTTP Methods**
+```typescript
+@Get()                    // GET request
+@Post()                   // POST request
+@Patch(':id')            // PATCH request
+@Delete(':id')           // DELETE request
+```
 
-## ℹ️ Additional Information
+2. **Route Parameters**
+```typescript
+@Get(':id')
+findOne(@Param('id') id: string) {
+  return this.service.findOne(+id);
+}
+```
 
-### Detailed Documentation
-For more detailed documentation, please refer to:
-- [NestJS Documentation](https://docs.nestjs.com/)
-- [TypeORM Documentation](https://typeorm.io/)
+3. **Request Body**
+```typescript
+@Post()
+create(@Body() createUserDto: CreateUserDto) {
+  return this.service.create(createUserDto);
+}
+```
 
-### Contribution
-Contributions are welcome! Please read our contributing guidelines.
+#### Request Validation
 
-### License
-This project is licensed under the MIT License.
+1. **DTOs and Validation**
+```typescript
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 
-### Support
-For support, please open an issue in the repository.
+export class CreateTaskDto {
+  @ApiProperty({ example: 'Do shopping' })
+  @IsString()
+  @IsNotEmpty()
+  title: string;
 
-### Acknowledgments
-- NestJS team
-- TypeORM contributors
-- Open source community
+  @ApiProperty({ example: 'Buy a gray T-shirt.' })
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+}
+```
+
+2. **Guards**
+```typescript
+@UseGuards(AuthGuard)
+@Get('profile')
+getProfile(@Request() req) {
+  return req.user;
+}
+```
+
+#### Response Handling
+
+1. **Status Codes**
+```typescript
+@Post()
+@HttpCode(HttpStatus.CREATED)
+create() {
+  return 'Created';
+}
+```
+
+2. **Response Transformation**
+```typescript
+@Get()
+@UseInterceptors(ClassSerializerInterceptor)
+findAll() {
+  return this.service.findAll();
+}
+```
+
+#### API Documentation
+
+1. **Swagger Decorators**
+```typescript
+@ApiOperation({ summary: 'Create a new user' })
+@ApiResponse({ status: 201, description: 'User created successfully.' })
+@ApiResponse({ status: 400, description: 'Bad Request.' })
+```
+
+#### Best Practices
+
+1. **Dependency Injection**
+```typescript
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+}
+```
